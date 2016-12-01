@@ -7,18 +7,19 @@ public class PlayerController : MonoBehaviour
         LowerBodyRunning,
         UpperBodySwordAttackForward,
         UpperBodySwordAttackBackward,
-        UpperBodySwordBlock;
+        UpperBodySwordBlock,
+        PlayerDying;
 
     private Animator _swordAttackForwardAnimator, _swordAttackBackwardAnimator, _blockAnimator;
 
     public float RunAnimationSpeed = 0.42f;
-    public float AttackAnimationSpeed = 0.3f;             // Set this higher, adjust animations in dope sheet (slow wind up, fast swing)
     private bool _canAttack = true;
-
-    // private Color _transparent = new Color(0xFF, 0xFF, 0xFF, 0x00);      // probably not needed, but nice to know
 
     private CurrentAnimationEvent _currAnimEvent;
     public CurrentAnimationEvent CurrAnimEvent { get { return _currAnimEvent; } set { _currAnimEvent = value; } }
+
+    private bool _isDead = false;
+    public bool IsDead { get { return _isDead; } set { _isDead = value; } }
 
     void Awake()
     {
@@ -27,25 +28,17 @@ public class PlayerController : MonoBehaviour
         _blockAnimator = UpperBodySwordBlock.GetComponent<Animator>();
     }
 
-    void Start ()
+    void Start()
     {
         UpperBodyRunning.GetComponent<Animator>().speed =
             LowerBodyRunning.GetComponent<Animator>().speed = RunAnimationSpeed;
-
-        _swordAttackForwardAnimator.speed =
-            _swordAttackBackwardAnimator.speed =
-            _blockAnimator.speed = AttackAnimationSpeed;
     }
 
-    void Update ()
+    void Update()
     {
         // DEBUG
         UpperBodyRunning.GetComponent<Animator>().speed =
             LowerBodyRunning.GetComponent<Animator>().speed = RunAnimationSpeed;
-        // DEBUG
-        _swordAttackForwardAnimator.speed =
-            _swordAttackBackwardAnimator.speed =
-            _blockAnimator.speed = AttackAnimationSpeed;
 
         if (_currAnimEvent != CurrentAnimationEvent.NONE)
         {
@@ -98,10 +91,9 @@ public class PlayerController : MonoBehaviour
     {
         UpperBodyRunning.GetComponent<SpriteRenderer>().enabled = true;
 
-        UpperBodySwordAttackForward.GetComponent<SpriteRenderer>().enabled = 
-            UpperBodySwordAttackBackward.GetComponent<SpriteRenderer>().enabled = 
+        UpperBodySwordAttackForward.GetComponent<SpriteRenderer>().enabled =
+            UpperBodySwordAttackBackward.GetComponent<SpriteRenderer>().enabled =
             UpperBodySwordBlock.GetComponent<SpriteRenderer>().enabled = false;
-        // Set other children's spriterenderers to false
     }
 
     private void HandleAnimationEvents()
@@ -109,13 +101,13 @@ public class PlayerController : MonoBehaviour
         switch (_currAnimEvent)
         {
             case CurrentAnimationEvent.SWORD_ATTACK_FORWARD:
-                if (Input.GetKey(KeyCode.D) && _swordAttackForwardAnimator.speed > 0)
+                if (Input.GetKey(KeyCode.D)) //&& _swordAttackForwardAnimator.speed > 0)
                 {
                     _swordAttackForwardAnimator.speed = 0;
                 }
                 else if (_swordAttackForwardAnimator.speed == 0)
                 {
-                    _swordAttackForwardAnimator.speed = AttackAnimationSpeed;
+                    _swordAttackForwardAnimator.speed = 1;
                 }
                 else
                 {
@@ -123,13 +115,13 @@ public class PlayerController : MonoBehaviour
                 }
                 break;
             case CurrentAnimationEvent.SWORD_ATTACK_BACKWARD:
-                if (Input.GetKey(KeyCode.A) && _swordAttackBackwardAnimator.speed > 0)
+                if (Input.GetKey(KeyCode.A)) //&& _swordAttackBackwardAnimator.speed > 0)
                 {
                     _swordAttackBackwardAnimator.speed = 0;
                 }
                 else if (_swordAttackBackwardAnimator.speed == 0)
                 {
-                    _swordAttackBackwardAnimator.speed = AttackAnimationSpeed;
+                    _swordAttackBackwardAnimator.speed = 1;
                 }
                 else
                 {
@@ -137,20 +129,20 @@ public class PlayerController : MonoBehaviour
                 }
                 break;
             case CurrentAnimationEvent.BLOCK:
-                if (Input.GetKey(KeyCode.W) && _blockAnimator.speed > 0)
+                if (Input.GetKey(KeyCode.W)) //&& _blockAnimator.speed > 0)
                 {
                     _blockAnimator.speed = 0;
                 }
                 else if (_blockAnimator.speed == 0)
                 {
-                    _blockAnimator.speed = AttackAnimationSpeed;
+                    _blockAnimator.speed = 1;
                 }
                 else
                 {
                     _currAnimEvent = CurrentAnimationEvent.NONE;
                 }
                 break;
-            case CurrentAnimationEvent.CURRENT_ANIMATION_FINISHED:
+            case CurrentAnimationEvent.PLAYER_ATTACK_ANIMATION_FINISHED:
                 _canAttack = true;
                 _currAnimEvent = CurrentAnimationEvent.NONE;
                 ResetAnimations();
@@ -160,20 +152,39 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void Death()
+    {
+        // Disable collider to prevent anymore enemy attacks
+        gameObject.GetComponent<BoxCollider2D>().enabled = false;
+
+        // On death set main camera to cull Player, Player Attack, Enemy, and Enemy Attack Layer
+        float layersToCull = Mathf.Pow(2, 8) + Mathf.Pow(2, 9) + Mathf.Pow(2, 10) + Mathf.Pow(2, 11);
+        Camera.main.cullingMask = Camera.main.cullingMask & Camera.main.cullingMask - (int)layersToCull;
+
+        // Set main camera background to red
+        Camera.main.backgroundColor = Color.red;                                                            // quick lerp?
+
+        // Stop Player Jiggle animation
+        gameObject.GetComponent<Animator>().Stop();
+
+        // Disable child GOs.
+        UpperBodySwordAttackForward.SetActive(false);
+        UpperBodySwordAttackBackward.SetActive(false);
+        UpperBodySwordBlock.gameObject.SetActive(false);
+        UpperBodyRunning.gameObject.SetActive(false);
+        LowerBodyRunning.gameObject.SetActive(false);
+
+        // Play death animation.
+        PlayerDying.GetComponent<SpriteRenderer>().enabled = true;
+        PlayerDying.GetComponent<Animator>().Play(null);
+    }
+
     private void OnTriggerEnter2D(Collider2D collider)
     {
         if (collider.gameObject.layer == LayerMask.NameToLayer("Enemy Attack"))
         {
-            Debug.Log("I'm dead.");
-            // Death();
+            _isDead = true;
+            Death();
         }
     }
-
-    private void Death()
-    {
-        // On death set main camera to cull Enemy Layer, 
-        //          set main camera background to red 
-        //          play animation
-    }
 }
-
