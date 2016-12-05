@@ -5,8 +5,7 @@ public class EnemyController : MonoBehaviour
 {
     public GameObject UpperBodyRunning, LowerBodyRunning, EnemyAttacking, EnemyDying;
 
-    public float MovementSpeed = 0.05f, RunAnimationSpeed = 0.42f;
-
+    private float _movementSpeed;
     private Animator _attackAnimator, _deathAnimator;
 
     private bool _canAttack = true;
@@ -23,7 +22,22 @@ public class EnemyController : MonoBehaviour
     private void Start()
     {
         UpperBodyRunning.GetComponent<Animator>().speed =
-            LowerBodyRunning.GetComponent<Animator>().speed = RunAnimationSpeed;
+            LowerBodyRunning.GetComponent<Animator>().speed = GameValues.RunAnimationSpeed;
+        switch (GameController.CurrentLevel)
+        {
+            case 1:
+                _movementSpeed = GameValues.EnemyMoveSpeed_Level_1;
+                break;
+            case 2:
+                _movementSpeed = GameValues.EnemyMoveSpeed_Level_2;
+                break;
+            case 3:
+                _movementSpeed = GameValues.EnemyMoveSpeed_Level_3;
+                break;
+            case 4:
+                _movementSpeed = GameValues.EnemyMoveSpeed_Level_4;
+                break;
+        }
     }
 
     private void Update()
@@ -33,7 +47,7 @@ public class EnemyController : MonoBehaviour
 
     private void Move()
     {
-        transform.Translate(new Vector2(MovementSpeed, 0f));
+        transform.Translate(new Vector2(_movementSpeed, 0f));
     }
 
     private void Attack()
@@ -56,9 +70,9 @@ public class EnemyController : MonoBehaviour
         _deathAnimator.Play(null);
 
         // If enemy is moving to the right, reverse their direction
-        if (MovementSpeed > 0)
+        if (_movementSpeed > 0)
         {
-            MovementSpeed = -MovementSpeed;
+            _movementSpeed = -_movementSpeed;
         }
     }
 
@@ -78,7 +92,6 @@ public class EnemyController : MonoBehaviour
         else if (collider.gameObject.layer == LayerMask.NameToLayer("Enemy Attack Zone") && _canAttack)
         {
             _canAttack = false;
-            Debug.Log(name + " beginning attack.");
             Attack();
         }
     }

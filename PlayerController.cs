@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
@@ -12,7 +11,6 @@ public class PlayerController : MonoBehaviour
 
     private Animator _swordAttackForwardAnimator, _swordAttackBackwardAnimator, _blockAnimator;
 
-    public float RunAnimationSpeed = 0.42f;
     private bool _canAttack = true;
 
     private CurrentAnimationEvent _currAnimEvent;
@@ -31,15 +29,11 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         UpperBodyRunning.GetComponent<Animator>().speed =
-            LowerBodyRunning.GetComponent<Animator>().speed = RunAnimationSpeed;
+            LowerBodyRunning.GetComponent<Animator>().speed = GameValues.RunAnimationSpeed;
     }
 
     void Update()
     {
-        // DEBUG
-        UpperBodyRunning.GetComponent<Animator>().speed =
-            LowerBodyRunning.GetComponent<Animator>().speed = RunAnimationSpeed;
-
         if (_currAnimEvent != CurrentAnimationEvent.NONE)
         {
             HandleAnimationEvents();
@@ -89,8 +83,9 @@ public class PlayerController : MonoBehaviour
 
     private void ResetAnimations()
     {
+        // Enable running GO renderer
         UpperBodyRunning.GetComponent<SpriteRenderer>().enabled = true;
-
+        // Disable attack GO renderers
         UpperBodySwordAttackForward.GetComponent<SpriteRenderer>().enabled =
             UpperBodySwordAttackBackward.GetComponent<SpriteRenderer>().enabled =
             UpperBodySwordBlock.GetComponent<SpriteRenderer>().enabled = false;
@@ -165,7 +160,7 @@ public class PlayerController : MonoBehaviour
         Camera.main.backgroundColor = Color.red;                                                            // quick lerp?
 
         // Stop Player Jiggle animation
-        gameObject.GetComponent<Animator>().Stop();
+        gameObject.GetComponent<Animator>().speed = 0;
 
         // Disable child GOs.
         UpperBodySwordAttackForward.SetActive(false);

@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 
 public class AnimationEventController : MonoBehaviour
 {
@@ -69,5 +68,15 @@ public class AnimationEventController : MonoBehaviour
         {
             GameObject.FindGameObjectWithTag("GameController").GetComponent<GameController>().GameOver();
         }
+    }
+
+    public void LevelIncreaseTextStart()
+    {
+        EnemySpawnerController.CanSpawnEnemies = false;
+    }
+
+    public void LevelIncreaseTextStop()
+    {
+        EnemySpawnerController.CanSpawnEnemies = true;
     }
 }
